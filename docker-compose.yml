@@ -1,0 +1,39 @@
+version: "3.9"
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    container_name: gestao_tarefas_app
+    volumes:
+      - ./src:/var/www
+    working_dir: /var/www
+    depends_on:
+      - postgres
+
+  nginx:
+    build:
+      context: docker/nginx
+    container_name: gestao_tarefas_nginx
+    ports:
+      - "8080:80"
+    volumes:
+      - ./src:/var/www
+    depends_on:
+      - app
+
+  postgres:
+    image: postgres:16
+    container_name: gestao_tarefas_postgres
+    environment:
+      POSTGRES_DB: gestao_tarefas
+      POSTGRES_USER: laravel
+      POSTGRES_PASSWORD: laravel
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+volumes:
+  pgdata:
