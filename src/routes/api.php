@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\TeamController;
+use App\Http\Controllers\ProjectController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -17,4 +18,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/teams/{id}', [TeamController::class, 'show']);
     Route::put('/teams/{id}', [TeamController::class, 'update']);
     Route::delete('/teams/{id}', [TeamController::class, 'destroy']);
+
+    Route::get('teams/{teamId}/projects', [ProjectController::class, 'index']);
+    Route::post('teams/{teamId}/projects', [ProjectController::class, 'store']);
 });
