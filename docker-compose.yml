@@ -8,6 +8,7 @@ services:
     container_name: gestao_tarefas_app
     volumes:
       - ./src:/var/www
+      - ./external-logs:/var/www/external-logs
     working_dir: /var/www
     depends_on:
       - postgres

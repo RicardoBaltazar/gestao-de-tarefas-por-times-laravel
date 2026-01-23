@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Log;
 
 class TaskController extends Controller
 {
@@ -30,6 +31,8 @@ class TaskController extends Controller
 
             $tasks = Task::where('project_id', $projectId)->get();
 
+            Log::channel('external')->info('Tarefas listadas com sucesso');
+
             return response()->json([
                 'success' => true,
                 'data' => $tasks,
@@ -39,7 +42,7 @@ class TaskController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Erro interno do servidor.'
+                'message' => 'Erro interno do servidor.',
             ], 500);
         }
     }
@@ -88,8 +91,7 @@ class TaskController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Erro interno do servidor.',
-                'error' => $e->getMessage() 
+                'message' => 'Erro interno do servidor.'    
             ], 500);
         }
     }
