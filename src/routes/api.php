@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\TeamController;
 use App\Http\Controllers\ProjectController;
+use App\Http\Controllers\TaskController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -21,4 +22,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('teams/{teamId}/projects', [ProjectController::class, 'index']);
     Route::post('teams/{teamId}/projects', [ProjectController::class, 'store']);
+
+    Route::get('projects/{projectId}/tasks', [TaskController::class, 'index']);
+    Route::post('projects/{projectId}/tasks', [TaskController::class, 'store']);
+    Route::put('projects/{projectId}/tasks/{taskId}', [TaskController::class, 'update']);
+    Route::patch('projects/{projectId}/tasks/{taskId}/status', [TaskController::class, 'updateStatus']);
 });
