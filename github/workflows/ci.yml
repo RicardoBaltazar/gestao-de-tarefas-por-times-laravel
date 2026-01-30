@@ -1,0 +1,123 @@
+name: CI Pipeline
+
+# Quando executar
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    
+    # Serviços externos (PostgreSQL)
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: laravel_test
+          POSTGRES_USER: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+    # Baixar código do repositório
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    # Instalar PHP no servidor do GitHub
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.4'
+        extensions: pdo, pdo_pgsql, mbstring, xml, ctype, json, bcmath, zip, unzip, curl, fileinfo
+
+    # Cache das dependências para acelerar
+    - name: Cache Composer dependencies
+      uses: actions/cache@v3
+      with:
+        path: src/vendor
+        key: ${{ runner.os }}-composer-${{ hashFiles('src/composer.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-composer-
+
+    # Cache do Node.js (se usar frontend)
+    - name: Cache Node modules
+      uses: actions/cache@v3
+      with:
+        path: src/node_modules
+        key: ${{ runner.os }}-node-${{ hashFiles('src/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-node-
+
+    # Instalar dependências do Composer
+    - name: Install Composer dependencies
+      working-directory: ./src
+      run: composer install --prefer-dist --no-progress --no-interaction --no-dev
+
+    # Criar arquivo de ambiente de teste
+    - name: Create testing environment file
+      working-directory: ./src
+      run: |
+        cp .env.example .env.testing
+        sed -i 's/APP_ENV=local/APP_ENV=testing/' .env.testing
+        sed -i 's/DB_CONNECTION=mysql/DB_CONNECTION=pgsql/' .env.testing
+        sed -i 's/DB_HOST=127.0.0.1/DB_HOST=localhost/' .env.testing
+        sed -i 's/DB_PORT=3306/DB_PORT=5432/' .env.testing
+        sed -i 's/DB_DATABASE=laravel/DB_DATABASE=laravel_test/' .env.testing
+        sed -i 's/DB_USERNAME=root/DB_USERNAME=postgres/' .env.testing
+        sed -i 's/DB_PASSWORD=/DB_PASSWORD=postgres/' .env.testing
+        echo "CACHE_STORE=array" >> .env.testing
+        echo "SESSION_DRIVER=array" >> .env.testing
+        echo "QUEUE_CONNECTION=sync" >> .env.testing
+        echo "MAIL_MAILER=array" >> .env.testing
+
+    # Gerar chave da aplicação
+    - name: Generate application key
+      working-directory: ./src
+      run: php artisan key:generate --env=testing
+
+    # Aguardar PostgreSQL estar pronto
+    - name: Wait for PostgreSQL
+      run: |
+        until pg_isready -h localhost -p 5432 -U postgres; do
+          echo "Waiting for PostgreSQL..."
+          sleep 2
+        done
+
+    # Executar migrations
+    - name: Run database migrations
+      working-directory: ./src
+      run: php artisan migrate --env=testing --force
+
+    # Executar seeders (se houver)
+    - name: Seed database
+      working-directory: ./src
+      run: php artisan db:seed --env=testing --force
+      continue-on-error: true
+
+    # Executar testes PHPUnit
+    - name: Execute PHPUnit tests
+      working-directory: ./src
+      run: php artisan test --env=testing --stop-on-failure
+
+    # Executar análise de código (opcional)
+    - name: Run PHP Code Sniffer
+      working-directory: ./src
+      run: |
+        if [ -f "vendor/bin/phpcs" ]; then
+          vendor/bin/phpcs --standard=PSR2 app/ --ignore=app/Console/Kernel.php
+        fi
+      continue-on-error: true
+
+    # Verificar sintaxe PHP
+    - name: PHP Syntax Check
+      working-directory: ./src
+      run: find . -name "*.php" -not -path "./vendor/*" -exec php -l {} \;
