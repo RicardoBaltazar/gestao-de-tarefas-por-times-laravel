@@ -16,7 +16,7 @@ class AuthControllerTest extends TestCase
     public function user_can_register_with_valid_data()
     {
         $userData = [
-            'name' => 'João Silva',
+            // 'name' => 'João Silva',
             'email' => 'joao@exemplo.com',
             'password' => 'senha123',
             'password_confirmation' => 'senha123',
