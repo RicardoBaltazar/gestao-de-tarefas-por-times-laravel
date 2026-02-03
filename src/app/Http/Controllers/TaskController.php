@@ -31,7 +31,7 @@ class TaskController extends Controller
 
             $tasks = Task::where('project_id', $projectId)->get();
 
-            Log::channel('external')->info('Tarefas listadas com sucesso');
+            Log::info('Tarefas listadas com sucesso');
 
             return response()->json([
                 'success' => true,
